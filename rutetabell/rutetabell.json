@@ -1,0 +1,34 @@
+[
+    {
+        "name": "Spikkestad",
+        "start_hour": 5,
+        "start_minute": 16,
+        "end_hour": 0,
+        "end_minute": 16,
+        "intervall": 30
+    },
+    {
+        "name": "Røyken",
+        "start_hour": 5,
+        "start_minute": 19,
+        "end_hour": 0,
+        "end_minute": 19,
+        "intervall": 30
+    },
+    {
+        "name": "Heggedal",
+        "start_hour": 5,
+        "start_minute": 24,
+        "end_hour": 0,
+        "end_minute": 24,
+        "intervall": 30
+    },
+    {
+        "name": "Asker",
+        "start_hour": 5,
+        "start_minute": 4,
+        "end_hour": 0,
+        "end_minute": 34,
+        "intervall": 15
+    }
+]

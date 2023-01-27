@@ -1,0 +1,27 @@
+[
+    {
+        "uid": "KOVNB0111",
+        "purchased": 2020,
+        "type": "Lenovo Thinkpad E495"
+    },
+    {
+        "uid": "KOVPC0111",
+        "purchased": 2019,
+        "type": "Lenovo Thinkpad T495"
+    },
+    {
+        "uid": "KOVNB0112",
+        "purchased": 2020,
+        "type": "Lenovo Thinkpad E495"
+    },
+    {
+        "uid": "KOVNB0110",
+        "purchased": 2021,
+        "type": "Lenovo Thinkpad L490"
+    },
+    {
+        "uid": "KOVPC0000",
+        "purchased": 2019,
+        "type": "foo bar"
+    }
+]
