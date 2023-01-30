@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
 import json
-from typing import NamedTuple, Any, Tuple, TypedDict
+from typing import NamedTuple
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
-from collections import deque, namedtuple
+from collections import deque
 
 DATAF_F_NAME = './data.json'
 
 
-# Papiravis', 'Fjernsyn', 'Radio', 'Bøker', 'Internett', 'Digitale spill'
+# 'Papiravis', 'Fjernsyn', 'Radio', 'Bøker', 'Internett', 'Digitale spill'
 class Data(NamedTuple):
     year: int
     data: dict[str, int]
@@ -35,7 +34,6 @@ def main() -> None:
 
         data.append(Data(year=years[i], data=cats))
         cats = {}
-
 
     fig, ax = plt.subplots()
 
