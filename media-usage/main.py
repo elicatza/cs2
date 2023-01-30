@@ -17,7 +17,7 @@ class Data(NamedTuple):
 
 def main() -> None:
     with open(DATAF_F_NAME, 'r', encoding='utf-8') as fp:
-        raw_data = json.loads(fp.read())
+        raw_data = json.load(fp)
 
     categories = tuple(raw_data['dataset']['dimension']['Media']['category']['label'].values())
     years = tuple(map(int, raw_data['dataset']['dimension']['Tid']['category']['index']))
