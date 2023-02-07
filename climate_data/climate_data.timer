@@ -1,0 +1,9 @@
+[Unit]
+Description=Download data from metrologisk institutt and nilu
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1h
+
+[Install]
+WantedBy=timers.target

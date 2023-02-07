@@ -1,0 +1,10 @@
+[Unit]
+Description=Download data from metrologisk institutt and nilu
+Requires=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=climate_data.py --fetch >> var/local/climate_data/data.json
+
+[Install]
+WantedBy=timers.target
