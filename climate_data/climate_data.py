@@ -6,8 +6,9 @@ import numpy.typing as npt
 import json
 import argparse
 import sys
-from typing import TypedDict
+from typing import TypedDict, Any
 import datetime as dt
+from collections import deque
 # import dateutil
 
 
@@ -57,30 +58,26 @@ HEADERS = {
 # Fetch data: 30 min
 
 
+def get_url_json(url: str, headers: dict[str, Any]) -> Any:
+    res = req.get(url, headers=headers)
+    if res.status_code != 200:
+        print(f"ERROR: invalid status code from `{url}`", file=sys.stderr)
+        raise req.ConnectionError
+
+    return json.loads(res.text)
+
+
 def fetch_location_data() -> list[LocationData]:
     # API docs: https://api.nilu.no/
     nilu_url = "https://api.nilu.no/aq/utd?areas=oslo&components=pm10"
-    nilu_res = req.get(nilu_url, headers=HEADERS)
+    nilu_data = get_url_json(nilu_url, headers=HEADERS)
 
-    if nilu_res.status_code != 200:
-        print(f"ERROR: invalid status code from `{nilu_url}`")
-        exit(1)
-
-    nilu_data = json.loads(nilu_res.text)
     places: list[LocationData] = list()
     for place in nilu_data:
-
-        # Get weather for location
         # API docs: https://api.met.no/weatherapi/locationforecast/2.0/documentation
         met_url = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={}&lon={}"
         met_url = met_url.format(place['latitude'], place['longitude'])
-        met_res = req.get(met_url, headers=HEADERS)
-
-        if met_res.status_code != 200:
-            print(f"ERROR: invalid status code from `{met_url}`")
-            exit(1)
-
-        met_data = json.loads(met_res.text)
+        met_data = get_url_json(met_url, headers=HEADERS)
         met_pdata = met_data['properties']['timeseries'][0]['data']['instant']['details']
         places.append(
                 LocationData(
@@ -107,6 +104,12 @@ def main() -> None:
                         '--fetch',
                         action='store_true',
                         help='fetch data and write to file')
+    parser.add_argument('-F',
+                        '--file',
+                        type=argparse.FileType('r'),
+                        default='/var/local/climate_data/data.json',
+                        help='fetch data and write to file')
+
     # Parse args if in fetch data mode or analyze data (default)
     # if fetch: get relevant data and write to file
     # if not fetch : show data to user. map, graphs
@@ -115,13 +118,30 @@ def main() -> None:
 
     if args.fetch:
         location_data = fetch_location_data()
-    else:
-        print("ERROR: not supported yet use --fetch")
-        exit(1)
+        data_obj = BigData(location_data=location_data, time=str(dt.datetime.now()))
 
-    data_obj = BigData(location_data=location_data, time=str(dt.datetime.now()))
+        print(json.dumps(data_obj))
+        return None
 
-    print(json.dumps(data_obj))
+    data_deq: deque[BigData] = deque()
+    while True:
+        line = args.file.readline()
+        if not line:
+            break
+
+        data_deq.append(json.loads(line))
+
+    # fig, ax = plt.subplots()
+
+    # ax.grid(axis='y')
+    # ax.plot(categories, val.data.values())
+    # ax.set_ylabel('Bruk in minutter')
+    # ax.set_ylim((0, 250))
+    # ax.set_title(f'År: {val.year}')
+
+    # plt.show()
+
+    return None
 
 
 if __name__ == '__main__':
