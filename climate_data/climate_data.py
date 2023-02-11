@@ -1,15 +1,16 @@
 #!/usr/bin/env python3.10
 
-import requests as req
-import numpy as np
-import numpy.typing as npt
-import json
-import argparse
-import sys
-from typing import TypedDict, Any
-import datetime as dt
 from collections import deque
-# import dateutil
+from collections.abc import Iterable
+from functools import reduce
+from typing import TypedDict, Any, Literal
+import argparse
+import datetime as dt
+import json
+import matplotlib.dates as mdate
+import matplotlib.pyplot as plt
+import requests as req
+import sys
 
 
 class Location(TypedDict):
@@ -29,7 +30,7 @@ class LocationData(TypedDict):
     wind_speed: float   # m / s
 
     # Nilu
-    pm10: float  # 0 - 600 μg/m3
+    pm10: float  # 0 - 600 μg/m^3
 
 
 class BigData(TypedDict):
@@ -43,22 +44,8 @@ HEADERS = {
     'User-Agent': 'Python/3.10.9'
 }
 
-# Data: https://api.nilu.no/aq/utd?areas=oslo&components=pm10
-# About data: https://en.wikipedia.org/wiki/Air_quality_index#Computing_the_AQI
-# get data Three times a day
-# Get relevant data
-# Temperatur sammenlignet med CO_2 utslitt
-# Daemon
-# Make grafs
-# Make statistics
 
-# Relevant nila data: place(lat, long), time, weather (rain, wind), pressure,
-# ME: create a map, with color over time
-
-# Fetch data: 30 min
-
-
-def get_url_json(url: str, headers: dict[str, Any]) -> Any:
+def get_url_json(url: str, headers: dict[str, str]) -> Any:
     res = req.get(url, headers=headers)
     if res.status_code != 200:
         print(f"ERROR: invalid status code from `{url}`", file=sys.stderr)
@@ -96,25 +83,25 @@ def fetch_location_data() -> list[LocationData]:
     return places
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description='Compare nilu and metrologisk_institutt data',
+def get_arg_namespace() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description='Compare NILU and Metrologisk Institutt data',
                                      prefix_chars='--',
                                      allow_abbrev=True)
-    parser.add_argument('-f',
-                        '--fetch',
+    parser.add_argument('-f', '--fetch',
                         action='store_true',
-                        help='fetch data and write to file')
-    parser.add_argument('-F',
-                        '--file',
+                        required=False,
+                        help='fetch data and print to stdout')
+    parser.add_argument('-F', '--file',
                         type=argparse.FileType('r'),
+                        required=False,
                         default='/var/local/climate_data/data.json',
-                        help='fetch data and write to file')
+                        help='choose which file to read data from')
 
-    # Parse args if in fetch data mode or analyze data (default)
-    # if fetch: get relevant data and write to file
-    # if not fetch : show data to user. map, graphs
-    # plotly, geopanda, osmnx (folium)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = get_arg_namespace()
 
     if args.fetch:
         location_data = fetch_location_data()
@@ -131,15 +118,30 @@ def main() -> None:
 
         data_deq.append(json.loads(line))
 
-    # fig, ax = plt.subplots()
+    time: deque[str] = deque(maxlen=len(data_deq))
+    pm10: deque[float] = deque(maxlen=len(data_deq))
+    wind_speed: deque[float] = deque(maxlen=len(data_deq))
 
-    # ax.grid(axis='y')
-    # ax.plot(categories, val.data.values())
+    for big_data in data_deq:
+        time.append(big_data['time'])
+        for i in big_data['location_data']:
+            if i['location']['name'] == 'Spikersuppa':
+                pm10.append(i['pm10'])
+                wind_speed.append(i['wind_speed'])
+
+    for i in range(len(time)):  # type: ignore  # dumb?
+        time[i] = dt.datetime.fromisoformat(time[i])  # type: ignore  # no idea
+        print(time[i], pm10[i], wind_speed[i])  # type: ignore  # dumb?
+
+    zero = mdate.date2num(time[0])
+    fig, ax = plt.subplots()
+
+    ax.bar(time, wind_speed, bottom=zero)
+    ax.bar(time, pm10, bottom=zero)
     # ax.set_ylabel('Bruk in minutter')
     # ax.set_ylim((0, 250))
     # ax.set_title(f'År: {val.year}')
-
-    # plt.show()
+    plt.show()
 
     return None
 
