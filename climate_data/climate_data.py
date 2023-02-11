@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.10
 
 from collections import deque
-from collections.abc import Iterable
+from collections.abc import Iterable, Generator
 from functools import reduce
 from typing import TypedDict, Any, Literal
 import argparse
@@ -54,33 +54,29 @@ def get_url_json(url: str, headers: dict[str, str]) -> Any:
     return json.loads(res.text)
 
 
-def fetch_location_data() -> list[LocationData]:
+def fetch_location_data() -> Generator[LocationData, None, None]:
     # API docs: https://api.nilu.no/
     nilu_url = "https://api.nilu.no/aq/utd?areas=oslo&components=pm10"
     nilu_data = get_url_json(nilu_url, headers=HEADERS)
 
-    places: list[LocationData] = list()
     for place in nilu_data:
         # API docs: https://api.met.no/weatherapi/locationforecast/2.0/documentation
         met_url = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={}&lon={}"
         met_url = met_url.format(place['latitude'], place['longitude'])
         met_data = get_url_json(met_url, headers=HEADERS)
         met_pdata = met_data['properties']['timeseries'][0]['data']['instant']['details']
-        places.append(
-                LocationData(
-                    location=Location(name=place['station'],
-                                      lati=place['latitude'],
-                                      long=place['longitude']
-                                      ),
-                    temperature=met_pdata['air_temperature'],
-                    pressure=met_pdata['air_pressure_at_sea_level'],
-                    humidity=met_pdata['relative_humidity'],
-                    cloud=met_pdata['cloud_area_fraction'],
-                    wind_speed=met_pdata['wind_speed'],
-                    pm10=place['value'])
-        )
 
-    return places
+        yield LocationData(
+                location=Location(name=place['station'],
+                                  lati=place['latitude'],
+                                  long=place['longitude']
+                                  ),
+                temperature=met_pdata['air_temperature'],
+                pressure=met_pdata['air_pressure_at_sea_level'],
+                humidity=met_pdata['relative_humidity'],
+                cloud=met_pdata['cloud_area_fraction'],
+                wind_speed=met_pdata['wind_speed'],
+                pm10=place['value'])
 
 
 def get_arg_namespace() -> argparse.Namespace:
@@ -104,19 +100,14 @@ def main() -> None:
     args = get_arg_namespace()
 
     if args.fetch:
-        location_data = fetch_location_data()
-        data_obj = BigData(location_data=location_data, time=str(dt.datetime.now()))
+        location_data = list(fetch_location_data())
+        print(json.dumps(BigData(location_data=location_data, time=str(dt.datetime.now()))))
 
-        print(json.dumps(data_obj))
         return None
 
     data_deq: deque[BigData] = deque()
-    while True:
-        line = args.file.readline()
-        if not line:
-            break
-
-        data_deq.append(json.loads(line))
+    for row in args.file:
+        data_deq.append(json.loads(row))
 
     time: deque[str] = deque(maxlen=len(data_deq))
     pm10: deque[float] = deque(maxlen=len(data_deq))
@@ -129,9 +120,9 @@ def main() -> None:
                 pm10.append(i['pm10'])
                 wind_speed.append(i['wind_speed'])
 
-    for i in range(len(time)):  # type: ignore  # dumb?
-        time[i] = dt.datetime.fromisoformat(time[i])  # type: ignore  # no idea
-        print(time[i], pm10[i], wind_speed[i])  # type: ignore  # dumb?
+    for i, t in enumerate(time):  # type: ignore
+        time[i] = dt.datetime.fromisoformat(t)  # type: ignore
+        print(time[i], pm10[i], wind_speed[i])  # type: ignore
 
     zero = mdate.date2num(time[0])
     fig, ax = plt.subplots()
