@@ -1,16 +1,18 @@
 #!/usr/bin/env python3.10
 
 from collections import deque
-from collections.abc import Iterable, Generator
-from functools import reduce
-from typing import TypedDict, Any, Literal
+from collections.abc import Generator
+from typing import TypedDict, Any
 import argparse
 import datetime as dt
 import json
 import matplotlib.dates as mdate
 import matplotlib.pyplot as plt
+import math
 import requests as req
 import sys
+import numpy as np
+import numpy.typing as npt
 
 
 class Location(TypedDict):
@@ -96,6 +98,28 @@ def get_arg_namespace() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def calculate_linearity(x: npt.NDArray[np.float32], y: npt.NDArray[np.float32]) -> float:
+    size = len(x)
+    if size != len(y):
+        return 0
+
+    # i: inner multiply
+    # o: outer multiply
+    sumxi = np.sum(x * x)
+    sumxo = np.sum(x) ** 2
+    sx = sumxi - (sumxo / size)
+
+    sumyi = np.sum(y * y)
+    sumyo = np.sum(y) ** 2
+    sy = sumyi - (sumyo / size)
+
+    sumxyi = np.sum(x * y)
+    sumxyo = np.sum(x) * np.sum(y)
+    sxy = sumxyi - (sumxyo / size)
+
+    return float(sxy / (math.sqrt(sx) * math.sqrt(sy)))
+
+
 def main() -> None:
     args = get_arg_namespace()
 
@@ -112,6 +136,7 @@ def main() -> None:
     time: deque[str] = deque(maxlen=len(data_deq))
     pm10: deque[float] = deque(maxlen=len(data_deq))
     wind_speed: deque[float] = deque(maxlen=len(data_deq))
+    pressure: deque[float] = deque(maxlen=len(data_deq))
 
     for big_data in data_deq:
         time.append(big_data['time'])
@@ -119,16 +144,23 @@ def main() -> None:
             if i['location']['name'] == 'Spikersuppa':
                 pm10.append(i['pm10'])
                 wind_speed.append(i['wind_speed'])
+                pressure.append(i['pressure'])
 
     for i, t in enumerate(time):  # type: ignore
         time[i] = dt.datetime.fromisoformat(t)  # type: ignore
-        print(time[i], pm10[i], wind_speed[i])  # type: ignore
+        # print(time[i], pm10[i], wind_speed[i])  # type: ignore
 
     zero = mdate.date2num(time[0])
     fig, ax = plt.subplots()
+    xax = np.arange(0, len(time), dtype=np.int32)
 
-    ax.bar(time, wind_speed, bottom=zero)
-    ax.bar(time, pm10, bottom=zero)
+    # Numpy has builtin np.corrcoef, but i wanted to to it myself
+    # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
+    r = calculate_linearity(np.array(pm10), np.array(pressure))
+    print(f"pm10, pressure corr: {r}")
+
+    ax.bar(xax, wind_speed)
+    ax.bar(xax, pm10)
     # ax.set_ylabel('Bruk in minutter')
     # ax.set_ylim((0, 250))
     # ax.set_title(f'År: {val.year}')
