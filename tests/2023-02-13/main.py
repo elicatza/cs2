@@ -38,7 +38,7 @@ def friendly_input(prompt: str, type_check: Callable[[str], str], invalid_messag
 
 
 def get_arg_namespace() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Compare NILU and Metrologisk Institutt data',
+    parser = argparse.ArgumentParser(description='Make cat observations!!',
                                      prefix_chars='--',
                                      allow_abbrev=True)
     parser.add_argument('-l', '--list',
