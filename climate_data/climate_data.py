@@ -156,7 +156,7 @@ def main() -> None:
 
     # Numpy has builtin np.corrcoef, but i wanted to to it myself
     # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
-    r = calculate_linearity(np.array(pm10), np.array(pressure))
+    r = calculate_linearity(np.array(pm10), np.array(wind_speed))
     print(f"pm10, pressure corr: {r}")
 
     ax.bar(xax, wind_speed)
