@@ -14,6 +14,7 @@ FILENAME = './cats.json'
 
 class CatInfo(TypedDict):
     times: list[str]
+    observations: list[str]
     place: str
     type: str
     count: int
@@ -75,10 +76,9 @@ def display_cats(cats: Iterable[CatInfo]) -> None:
         print(f"type : {cat_info['type']}")
         print(f"Place: {cat_info['place']}")
         print(f"Count: {cat_info['count']}")
-        print('Times: ', end='')
-        for i in cat_info['times']:
-            print(f'{i}\t', end='')
-        print('\n')  # newline
+        for time, obser in zip(cat_info['times'], cat_info['observations']):
+            print(f'{time}: {obser}')
+        print('')  # newline
 
     return None
 
@@ -91,21 +91,23 @@ def cat_is_in_dict(type: str, place: str, cats: list[CatInfo]) -> int:
     return -1
 
 
-def add_new_cat(type: str, place: str, cats: list[CatInfo]) -> None:
+def add_new_cat(type: str, place: str, observation: str, cats: list[CatInfo]) -> None:
     cats.append(CatInfo(place=place,
                         type=type,
                         count=1,
-                        times=[str(dt.datetime.now())]
+                        times=[str(dt.datetime.now())],
+                        observations=[observation]
                         )
                 )
     return None
 
 
-def mutate_cat(type: str, place: str, cats: list[CatInfo], index: int) -> None:
+def mutate_cat(type: str, place: str, observation: str, cats: list[CatInfo], index: int) -> None:
     if index < 0:
         return None
     # print(next(index for index, item in enumerate(cats) if item['type'] == place))
     cats[index]['times'].append(str(dt.datetime.now()))
+    cats[index]['observations'].append(observation)
     cats[index]['count'] += 1
 
     return None
@@ -123,14 +125,14 @@ def main() -> None:
         # Get user input cat
         cat_type = friendly_input("Enter cat type: ", str, "ERROR: Not a valid cat type")
         cat_place = friendly_input("Enter place: ", str, "ERROR: Not a valid place")
+        cat_observation = friendly_input("Enter observation: ", str, "ERROR: Not a valid observation")
 
         cats_id = cat_is_in_dict(cat_type, cat_place, cats)
         if cats_id >= 0:
-            mutate_cat(cat_type, cat_place, cats, cats_id)
+            mutate_cat(cat_type, cat_place, cat_observation, cats, cats_id)
         else:
-            add_new_cat(cat_type, cat_place, cats)
+            add_new_cat(cat_type, cat_place, cat_observation, cats)
 
-        display_cats(cats)
         write_cat_file(FILENAME, cats)
 
     return None
