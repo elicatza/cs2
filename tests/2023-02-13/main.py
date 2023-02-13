@@ -4,7 +4,6 @@ from typing import TypedDict, Callable
 from collections.abc import Iterable
 import datetime as dt
 import argparse
-from io import FileIO
 import sys
 import json
 
@@ -125,13 +124,13 @@ def main() -> None:
         # Get user input cat
         cat_type = friendly_input("Enter cat type: ", str, "ERROR: Not a valid cat type")
         cat_place = friendly_input("Enter place: ", str, "ERROR: Not a valid place")
-        cat_observation = friendly_input("Enter observation: ", str, "ERROR: Not a valid observation")
+        cat_obser = friendly_input("Enter observation: ", str, "ERROR: Not a valid observation")
 
         cats_id = cat_is_in_dict(cat_type, cat_place, cats)
         if cats_id >= 0:
-            mutate_cat(cat_type, cat_place, cat_observation, cats, cats_id)
+            mutate_cat(cat_type, cat_place, cat_obser, cats, cats_id)
         else:
-            add_new_cat(cat_type, cat_place, cat_observation, cats)
+            add_new_cat(cat_type, cat_place, cat_obser, cats)
 
         write_cat_file(FILENAME, cats)
 
