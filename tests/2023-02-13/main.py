@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.10
 
 from typing import TypedDict, Callable
-from collections.abc import Iterable
 import datetime as dt
 import argparse
 import sys
@@ -70,55 +69,56 @@ def write_cat_file(filename: str, cats: list[CatInfo]) -> None:
     return None
 
 
-def display_cats(cats: Iterable[CatInfo]) -> None:
-    for cat_info in cats:
-        print(f"type : {cat_info['type']}")
-        print(f"Place: {cat_info['place']}")
-        print(f"Count: {cat_info['count']}")
-        for time, obser in zip(cat_info['times'], cat_info['observations']):
-            print(f'{time}: {obser}')
-        print('')  # newline
+class Cats:
+    def __init__(self, cats: list[CatInfo]):
+        self.cats = cats
 
-    return None
+    def display(self) -> None:
+        for cat in self.cats:
+            print(f"type : {cat['type']}")
+            print(f"Place: {cat['place']}")
+            print(f"Count: {cat['count']}")
+            for time, obser in zip(cat['times'], cat['observations']):
+                print(f'{time}: {obser}')
+            print('')  # newline
 
+        return None
 
-def cat_is_in_dict(type: str, place: str, cats: list[CatInfo]) -> int:
-    for i, cat in enumerate(cats):
-        if cat['type'] == type and cat['place'] == place:
-            return i
-    # print(next(index for index, item in enumerate(cats) if item['type'] == place))
-    return -1
+    def get_cat_index(self, type: str, place: str) -> int:
+        for i, cat in enumerate(self.cats):
+            if cat['type'] == type and cat['place'] == place:
+                return i
+        # print(next(index for index, item in enumerate(cats) if item['type'] == place))
+        return -1
 
-
-def add_new_cat(type: str, place: str, observation: str, cats: list[CatInfo]) -> None:
-    cats.append(CatInfo(place=place,
+    def add_new_cat(self, type: str, place: str, observation: str) -> None:
+        self.cats.append(
+                CatInfo(place=place,
                         type=type,
                         count=1,
                         times=[str(dt.datetime.now())],
                         observations=[observation]
-                        )
-                )
-    return None
-
-
-def mutate_cat(type: str, place: str, observation: str, cats: list[CatInfo], index: int) -> None:
-    if index < 0:
+                        ))
         return None
-    # print(next(index for index, item in enumerate(cats) if item['type'] == place))
-    cats[index]['times'].append(str(dt.datetime.now()))
-    cats[index]['observations'].append(observation)
-    cats[index]['count'] += 1
 
-    return None
+    def mutate_cat(self, type: str, place: str, observation: str, id: int) -> None:
+        if id < 0:
+            return None
+        # print(next(index for index, item in enumerate(cats) if item['type'] == place))
+        self.cats[id]['times'].append(str(dt.datetime.now()))
+        self.cats[id]['observations'].append(observation)
+        self.cats[id]['count'] += 1
+
+        return None
 
 
 def main() -> None:
     args = get_arg_namespace()
 
-    cats = parse_cat_file(FILENAME)
+    cats = Cats(parse_cat_file(FILENAME))
 
     if args.list:
-        display_cats(cats)
+        cats.display()
 
     if args.add:
         # Get user input cat
@@ -126,13 +126,13 @@ def main() -> None:
         cat_place = friendly_input("Enter place: ", str, "ERROR: Not a valid place")
         cat_obser = friendly_input("Enter observation: ", str, "ERROR: Not a valid observation")
 
-        cats_id = cat_is_in_dict(cat_type, cat_place, cats)
-        if cats_id >= 0:
-            mutate_cat(cat_type, cat_place, cat_obser, cats, cats_id)
+        cat_id = cats.get_cat_index(cat_type, cat_place)
+        if cat_id >= 0:
+            cats.mutate_cat(cat_type, cat_place, cat_obser, cat_id)
         else:
-            add_new_cat(cat_type, cat_place, cat_obser, cats)
+            cats.add_new_cat(cat_type, cat_place, cat_obser)
 
-        write_cat_file(FILENAME, cats)
+        write_cat_file(FILENAME, cats.cats)
 
     return None
 
