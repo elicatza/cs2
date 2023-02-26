@@ -43,11 +43,11 @@ def get_arg_namespace() -> argparse.Namespace:
     parser.add_argument('-l', '--list',
                         action='store_true',
                         required=False,
-                        help='List all observed birds')
+                        help='List all observed cats')
     parser.add_argument('-a', '--add',
                         action='store_true',
                         required=False,
-                        help='Add new bird')
+                        help='Add new cat')
 
     if len(sys.argv) == 1:
         parser.print_help()

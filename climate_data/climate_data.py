@@ -150,13 +150,13 @@ def main() -> None:
         time[i] = dt.datetime.fromisoformat(t)  # type: ignore
         # print(time[i], pm10[i], wind_speed[i])  # type: ignore
 
-    zero = mdate.date2num(time[0])
+    # zero = mdate.date2num(time[0])
     fig, ax = plt.subplots()
     xax = np.arange(0, len(time), dtype=np.int32)
 
     # Numpy has builtin np.corrcoef, but i wanted to to it myself
     # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
-    r = calculate_linearity(np.array(pm10), np.array(wind_speed))
+    r = calculate_linearity(np.array(pm10), np.array(pressure))
     print(f"pm10, pressure corr: {r}")
 
     ax.bar(xax, wind_speed)
