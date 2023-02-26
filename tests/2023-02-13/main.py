@@ -20,17 +20,15 @@ class CatInfo(TypedDict):
 
 # Type check function can be builtin python, or function returning var / False,
 # depending on if condition is met
-def friendly_input(prompt: str, type_check: Callable[[str], str], invalid_message: str) -> str:
+def friendly_input(prompt: str, type_check: Callable[[str], str], err_message: str) -> str:
     while True:
         try:
             user_input = type_check(input(prompt))
-            if user_input is False:
-                raise ValueError
             break
         except (EOFError, KeyboardInterrupt):
             exit(0)
         except ValueError:
-            print(invalid_message)
+            print(err_message)
 
     return user_input
 
