@@ -146,25 +146,27 @@ def main() -> None:
                 wind_speed.append(i['wind_speed'])
                 pressure.append(i['pressure'])
 
-    for i, t in enumerate(time):  # type: ignore
-        time[i] = dt.datetime.fromisoformat(t)  # type: ignore
+    # for i, t in enumerate(time):  # type: ignore
+        # time[i] = dt.datetime.fromisoformat(t)  # type: ignore
         # print(time[i], pm10[i], wind_speed[i])  # type: ignore
 
+    for i in pm10:
+        print(i)
     # zero = mdate.date2num(time[0])
-    fig, ax = plt.subplots()
-    xax = np.arange(0, len(time), dtype=np.int32)
+    # fig, ax = plt.subplots()
+    # xax = np.arange(0, len(time), dtype=np.int32)
 
     # Numpy has builtin np.corrcoef, but i wanted to to it myself
     # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
-    r = calculate_linearity(np.array(pm10), np.array(pressure))
-    print(f"pm10, pressure corr: {r}")
+    # r = calculate_linearity(np.array(pm10), np.array(pressure))
+    # print(f"pm10, pressure corr: {r}")
 
-    ax.bar(xax, wind_speed)
-    ax.bar(xax, pm10)
+    # ax.bar(xax, wind_speed)
+    # ax.bar(xax, pm10)
     # ax.set_ylabel('Bruk in minutter')
     # ax.set_ylim((0, 250))
     # ax.set_title(f'År: {val.year}')
-    plt.show()
+    # plt.show()
 
     return None
 
