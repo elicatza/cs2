@@ -143,22 +143,17 @@ def main() -> None:
 
         return None
 
-    entries, backup = itertools.tee(parse_data(args.file))
+    entries = parse_data(args.file)
     entries = filter_place(entries, 'Rv 4, Aker sykehus')
-    backup = filter_place(backup, 'Rv 4, Aker sykehus')
     entries = filter_time_range(entries, dt.time(13), dt.time(14))
-    backup = filter_time_range(backup, dt.time(13), dt.time(14))
+    ea, eb = itertools.tee(entries)
 
-    wind_v = tuple(extract_entries_field(entries, 'Rv 4, Aker sykehus', 'wind_speed'))
-    pm10 = tuple(extract_entries_field(backup, 'Rv 4, Aker sykehus', 'pm10'))
+    pm10 = tuple(extract_entries_field(ea, 'Rv 4, Aker sykehus', 'pm10'))
+    wind_v = tuple(extract_entries_field(eb, 'Rv 4, Aker sykehus', 'wind_speed'))
 
-    # xax = np.arange(0, len(time), dtype=np.int32)
-
-    # Numpy has builtin np.corrcoef, but i wanted to to it myself
-    # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
     size = len(wind_v)
     x = np.arange(size)
-    print(pm10, wind_v)
+
     fig, ax = plt.subplots()
     ax.bar(x, pm10)
     ax.bar(x, wind_v)
