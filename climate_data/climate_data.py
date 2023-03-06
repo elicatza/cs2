@@ -1,10 +1,11 @@
 #!/usr/bin/env python3.10
 
 from collections import deque
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from typing import TypedDict, Any
 import argparse
 import datetime as dt
+from io import TextIOWrapper
 import json
 import matplotlib.dates as mdate
 import matplotlib.pyplot as plt
@@ -35,8 +36,8 @@ class LocationData(TypedDict):
     pm10: float  # 0 - 600 μg/m^3
 
 
-class BigData(TypedDict):
-    time: str
+class EntryObj(TypedDict):
+    time: dt.datetime
     location_data: list[LocationData]
 
 
@@ -98,26 +99,36 @@ def get_arg_namespace() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def calculate_linearity(x: npt.NDArray[np.float32], y: npt.NDArray[np.float32]) -> float:
-    size = len(x)
-    if size != len(y):
-        return 0
+def parse_data(file: TextIOWrapper) -> Generator[EntryObj, None, None]:
+    for line in file:
+        pline = json.loads(line)
+        pline['time'] = dt.datetime.fromisoformat(pline['time'])
+        yield pline
 
-    # i: inner multiply
-    # o: outer multiply
-    sumxi = np.sum(x * x)
-    sumxo = np.sum(x) ** 2
-    sx = sumxi - (sumxo / size)
 
-    sumyi = np.sum(y * y)
-    sumyo = np.sum(y) ** 2
-    sy = sumyi - (sumyo / size)
+def filter_time_range(entries: Iterable[EntryObj],
+                      start: dt.time,
+                      end: dt.time
+                      ) -> Generator[EntryObj, None, None]:
+    for entry in entries:
+        if start <= entry['time'].time() <= end:
+            yield entry
 
-    sumxyi = np.sum(x * y)
-    sumxyo = np.sum(x) * np.sum(y)
-    sxy = sumxyi - (sumxyo / size)
 
-    return float(sxy / (math.sqrt(sx) * math.sqrt(sy)))
+def filter_place(entries: Iterable[EntryObj], place: str
+                 ) -> Generator[EntryObj, None, None]:
+    for entry in entries:
+        for location in entry['location_data']:
+            if location['location']['name'] == place:
+                yield entry
+
+
+def extract_entries_field(entries: Iterable[EntryObj], place: str, key: str
+                          ) -> Generator[float, None, None]:
+    for entry in entries:
+        for i in entry['location_data']:
+            if i['location']['name'] == place:
+                yield i[key]  # type: ignore
 
 
 def main() -> None:
@@ -125,48 +136,30 @@ def main() -> None:
 
     if args.fetch:
         location_data = list(fetch_location_data())
-        print(json.dumps(BigData(location_data=location_data, time=str(dt.datetime.now()))))
+        print(json.dumps(EntryObj(
+            location_data=location_data,
+            time=str(dt.datetime.now()))))  # type: ignore
 
         return None
 
-    data_deq: deque[BigData] = deque()
-    for row in args.file:
-        data_deq.append(json.loads(row))
+    entries = parse_data(args.file)
+    entries = filter_place(entries, 'Rv 4, Aker sykehus')
+    entries = filter_time_range(entries, dt.time(13), dt.time(14))
 
-    time: deque[str] = deque(maxlen=len(data_deq))
-    pm10: deque[float] = deque(maxlen=len(data_deq))
-    wind_speed: deque[float] = deque(maxlen=len(data_deq))
-    pressure: deque[float] = deque(maxlen=len(data_deq))
+    wind_v = tuple(extract_entries_field(entries, 'Rv 4, Aker sykehus', 'wind_speed'))
+    pm10 = tuple(extract_entries_field(entries, 'Rv 4, Aker sykehus', 'pm10'))
 
-    for big_data in data_deq:
-        time.append(big_data['time'])
-        for i in big_data['location_data']:
-            if i['location']['name'] == 'Spikersuppa':
-                pm10.append(i['pm10'])
-                wind_speed.append(i['wind_speed'])
-                pressure.append(i['pressure'])
-
-    # for i, t in enumerate(time):  # type: ignore
-        # time[i] = dt.datetime.fromisoformat(t)  # type: ignore
-        # print(time[i], pm10[i], wind_speed[i])  # type: ignore
-
-    for i in pm10:
-        print(i)
-    # zero = mdate.date2num(time[0])
-    # fig, ax = plt.subplots()
     # xax = np.arange(0, len(time), dtype=np.int32)
 
     # Numpy has builtin np.corrcoef, but i wanted to to it myself
     # print(np.corrcoef(np.array(pm10), np.array(wind_speed)))
-    # r = calculate_linearity(np.array(pm10), np.array(pressure))
-    # print(f"pm10, pressure corr: {r}")
-
-    # ax.bar(xax, wind_speed)
-    # ax.bar(xax, pm10)
-    # ax.set_ylabel('Bruk in minutter')
-    # ax.set_ylim((0, 250))
-    # ax.set_title(f'År: {val.year}')
-    # plt.show()
+    size = len(wind_v)
+    x = np.arange(size)
+    print(pm10, wind_v)
+    fig, ax = plt.subplots()
+    # ax.plot(x, pm10)
+    ax.bar(x, wind_v)
+    plt.show()
 
     return None
 
