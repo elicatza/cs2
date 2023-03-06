@@ -1,19 +1,15 @@
 #!/usr/bin/env python3.10
 
-from collections import deque
 from collections.abc import Generator, Iterable
 from typing import TypedDict, Any
 import argparse
 import datetime as dt
 from io import TextIOWrapper
 import json
-import matplotlib.dates as mdate
 import matplotlib.pyplot as plt
-import math
 import requests as req
 import sys
 import numpy as np
-import numpy.typing as npt
 import itertools
 
 
@@ -47,6 +43,31 @@ HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'User-Agent': 'Python/3.10.9'
 }
+
+PLACES = (
+        'Rv 4, Aker sykehus',
+        'Smestad',
+        'Sofienbergparken',
+        'Manglerud',
+        'Bygdøy Alle',
+        'Alnabru',
+        'Skøyen',
+        'Hjortnes',
+        'Kirkeveien',
+        'Spikersuppa',
+        'Vahl skole',
+        'Loallmenningen',
+        'E6 Alna senter',
+        'Brynbanen'
+        )
+
+DATA_FIELDS = (
+        'temperature',
+        'pressure',
+        'humidity',
+        'cloud',
+        'wind_speed',
+        )
 
 
 def get_url_json(url: str, headers: dict[str, str]) -> Any:
@@ -83,6 +104,17 @@ def fetch_location_data() -> Generator[LocationData, None, None]:
                 pm10=place['value'])
 
 
+def arg_parse_hour(val: str) -> tuple[int, int]:
+    start, end = map(int, val.split(':', 2))
+    if start >= end:
+        raise argparse.ArgumentTypeError('Invalid time. First number is has to be heigher than second number')
+
+    if not (start >= 0 and start <= 23) and (end >= 0 and end <= 23):
+        raise argparse.ArgumentTypeError('%s is not a valid time. has to be in range 0-23')
+
+    return (start, end)
+
+
 def get_arg_namespace() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Compare NILU and Metrologisk Institutt data',
                                      prefix_chars='--',
@@ -96,6 +128,25 @@ def get_arg_namespace() -> argparse.Namespace:
                         required=False,
                         default='/var/local/climate_data/data.json',
                         help='choose which file to read data from')
+    parser.add_argument('-w', '--wind-speed',
+                        action='store_true',
+                        required=False,
+                        help='show plot for wind speed')
+    parser.add_argument('-t', '--time',
+                        type=arg_parse_hour,
+                        required=False,
+                        default=(12, 13),
+                        help='specify time range')
+    parser.add_argument('-p', '--place',
+                        choices=PLACES,
+                        required=False,
+                        default='Spikersuppa',
+                        help='specify place')
+    parser.add_argument('-v', '--var',
+                        choices=DATA_FIELDS,
+                        required=False,
+                        default='temperature',
+                        help='specify variable')
 
     return parser.parse_args()
 
@@ -144,19 +195,19 @@ def main() -> None:
         return None
 
     entries = parse_data(args.file)
-    entries = filter_place(entries, 'Rv 4, Aker sykehus')
-    entries = filter_time_range(entries, dt.time(13), dt.time(14))
+    entries = filter_place(entries, args.place)
+    entries = filter_time_range(entries, dt.time(args.time[0]), dt.time(args.time[1]))
     ea, eb = itertools.tee(entries)
 
     pm10 = tuple(extract_entries_field(ea, 'Rv 4, Aker sykehus', 'pm10'))
-    wind_v = tuple(extract_entries_field(eb, 'Rv 4, Aker sykehus', 'wind_speed'))
+    cmp = tuple(extract_entries_field(eb, 'Rv 4, Aker sykehus', args.var))
 
-    size = len(wind_v)
+    print(args.place)
+    size = len(pm10)
     x = np.arange(size)
-
     fig, ax = plt.subplots()
-    ax.bar(x, pm10)
-    ax.bar(x, wind_v)
+    ax.bar(x + 0.2, pm10, width=0.4)
+    ax.bar(x - 0.2, cmp, width=0.4)
     plt.show()
 
     return None
