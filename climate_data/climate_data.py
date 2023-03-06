@@ -14,6 +14,7 @@ import requests as req
 import sys
 import numpy as np
 import numpy.typing as npt
+import itertools
 
 
 class Location(TypedDict):
@@ -142,12 +143,14 @@ def main() -> None:
 
         return None
 
-    entries = parse_data(args.file)
+    entries, backup = itertools.tee(parse_data(args.file))
     entries = filter_place(entries, 'Rv 4, Aker sykehus')
+    backup = filter_place(backup, 'Rv 4, Aker sykehus')
     entries = filter_time_range(entries, dt.time(13), dt.time(14))
+    backup = filter_time_range(backup, dt.time(13), dt.time(14))
 
     wind_v = tuple(extract_entries_field(entries, 'Rv 4, Aker sykehus', 'wind_speed'))
-    pm10 = tuple(extract_entries_field(entries, 'Rv 4, Aker sykehus', 'pm10'))
+    pm10 = tuple(extract_entries_field(backup, 'Rv 4, Aker sykehus', 'pm10'))
 
     # xax = np.arange(0, len(time), dtype=np.int32)
 
@@ -157,7 +160,7 @@ def main() -> None:
     x = np.arange(size)
     print(pm10, wind_v)
     fig, ax = plt.subplots()
-    # ax.plot(x, pm10)
+    ax.bar(x, pm10)
     ax.bar(x, wind_v)
     plt.show()
 
