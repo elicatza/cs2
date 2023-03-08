@@ -199,15 +199,17 @@ def main() -> None:
     entries = filter_time_range(entries, dt.time(args.time[0]), dt.time(args.time[1]))
     ea, eb = itertools.tee(entries)
 
-    pm10 = tuple(extract_entries_field(ea, 'Rv 4, Aker sykehus', 'pm10'))
-    cmp = tuple(extract_entries_field(eb, 'Rv 4, Aker sykehus', args.var))
+    pm10 = tuple(extract_entries_field(ea, args.place, 'pm10'))
+    cmp = tuple(extract_entries_field(eb, args.place, args.var))
 
     print(args.place)
     size = len(pm10)
     x = np.arange(size)
     fig, ax = plt.subplots()
-    ax.bar(x + 0.2, pm10, width=0.4)
-    ax.bar(x - 0.2, cmp, width=0.4)
+    ax.bar(x + 0.2, pm10, width=0.4, color='#55cdfc')
+    ax.set_label(args.place)
+    ax.legend('pm10', args.var, loc='upper left')
+    ax.bar(x - 0.2, cmp, width=0.4, color='#f7a8b8')
     plt.show()
 
     return None
