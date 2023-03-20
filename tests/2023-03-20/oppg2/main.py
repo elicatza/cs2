@@ -3,8 +3,6 @@
 import matplotlib.pyplot as plt
 from typing import Any
 import json
-import sys
-import numpy as np
 
 
 FILENAME = './bildata.json'
