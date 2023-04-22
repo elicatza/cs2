@@ -163,7 +163,7 @@ def main() -> None:
             Ball(
                 rad=70,
                 pos=Pos(50, 300),
-                vel=Vec(100, 100),
+                vel=Vec(100, 120),
                 acc=Vec(0, -9.81),
                 ),
             Ball(
@@ -178,7 +178,7 @@ def main() -> None:
 
     draw_trans_bg(window, w_width, w_height)
     clock = pygame.time.Clock()
-    frames = 55
+    frames = 60
     dt = 1 / frames
 
     while running:
@@ -204,7 +204,9 @@ def main() -> None:
             ball_draw(window, ball)
         pygame.display.flip()
         clock.tick(frames)
+        # pygame.time.wait(20)
 
+    pygame.quit()
     return None
 
 
