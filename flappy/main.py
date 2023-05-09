@@ -231,6 +231,18 @@ class Game:
         self.bird.acc.y = h * G_ACC
         return None
 
+    def loop(self, window: pygame.surface.Surface, dt: float, w: int, h: int) -> None:
+        self.update_vars(dt)
+        self.score += self.clean_pipes()
+        self.draw(window)
+
+        if self.is_colliding(h):
+            self.reset(w, h)
+
+        if len(self.pipes) < 6 * 2:
+            self.add_pipe_set(w, h)
+        return None
+
 
 def draw_trans_bg(window: pygame.surface.Surface, w: int, h: int) -> None:
     pygame.draw.rect(window, C_BLUE, (0, 0, w, h // 5))
@@ -249,11 +261,9 @@ def main() -> None:
     pygame.font.init()
     pygame.display.set_caption('Firstgame')
 
-    w_width = 1000
-    w_height = 850
+    w_width = 800
+    w_height = 500
     window = pygame.display.set_mode((w_width, w_height))
-
-    running = True
 
     clock = pygame.time.Clock()
     frames = 60
@@ -264,6 +274,7 @@ def main() -> None:
     font = pygame.font.SysFont('freesans', 32)
     text = font.render(f'score: {game_obj.score}', True, (0, 0, 0))
 
+    running = True
     while running:
         for event in pygame.event.get():
             match event.type:
@@ -278,16 +289,12 @@ def main() -> None:
                             game_obj.bird.jump(w_height)
 
         draw_bg(window)
-        game_obj.update_vars(dt)
-        game_obj.score += game_obj.clean_pipes()
-        game_obj.draw(window)
+        # Update state and render game
+        game_obj.loop(window, dt, w_width, w_height)
+
+        # Show user score
         window.blit(text, (0, 0))
         text = font.render(f'score: {game_obj.score}', True, (0, 0, 0))
-        if game_obj.is_colliding(w_height):
-            game_obj.reset(w_width, w_height)
-
-        if len(game_obj.pipes) < 6 * 2:
-            game_obj.add_pipe_set(w_width, w_height)
 
         pygame.display.flip()
         clock.tick(frames)
